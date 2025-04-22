@@ -20,21 +20,23 @@
 
    
    git clone https://github.com/TubalQ/isowise.git
+   
 
-   cd isowise
+2. Add permissions
+
 
    chmod +x Isowise
    
 
-2. Run the script:
+3. Run the script:
 
    
    ./Isowise
    
 
-3. Answer the questions (you can type `y`, `n`, or `u` for unsure)
+4. Answer the questions (you can type `y`, `n`, or `u` for unsure)
 
-4. A recommendation will be given and saved in `logs/`
+5. A recommendation will be given and saved in `logs/`
 
 
 ## Example Log Entry
