@@ -1,6 +1,6 @@
 # IsoWise 
 
-**IsoWise** is a simple yet powerful decision tool that helps you determine whether a service should be deployed in a **Virtual Machine (VM)** or a **Linux Container (LXC)** based on its risk profile.
+**IsoWise** is a simple decision tool that helps you determine whether a service should be deployed in a **Virtual Machine (VM)** or a **Linux Container (LXC)** based on its risk score.
 
 
 
