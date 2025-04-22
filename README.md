@@ -23,13 +23,13 @@
 
    cd isowise
 
-   chmod +x isolation-helper.sh
+   chmod +x Isowise
    
 
 2. Run the script:
 
    
-   ./isolation-helper.sh
+   ./Isowise
    
 
 3. Answer the questions (you can type `y`, `n`, or `u` for unsure)
