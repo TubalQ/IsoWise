@@ -1,0 +1,139 @@
+#!/bin/bash
+
+# Check for bc
+if ! command -v bc >/dev/null 2>&1; then
+    echo "⚠️  'bc' is required for this script but is not installed."
+    echo "Attempting to install it now..."
+    
+    # Detect distro and install bc
+    if [ -f /etc/debian_version ]; then
+        sudo apt update && sudo apt install -y bc
+    elif [ -f /etc/alpine-release ]; then
+        sudo apk add bc
+    elif [ -f /etc/redhat-release ] || grep -qi "fedora" /etc/os-release; then
+        sudo dnf install -y bc || sudo yum install -y bc
+    else
+        echo " Unsupported system. Please install 'bc' manually."
+        exit 1
+    fi
+
+    # Re-check
+    if ! command -v bc >/dev/null 2>&1; then
+        echo " Failed to install 'bc'. Please install it manually and re-run this script."
+        exit 1
+    else
+        echo "✅ 'bc' installed successfully."
+    fi
+fi
+
+clear
+echo "🔐 Isolation Decision Helper – Should this service run in a VM or LXC?"
+echo ""
+echo "────────────────────────────────────────────────────────────"
+echo "👋 This tool helps you decide whether to run a service in a"
+echo "   Virtual Machine (VM) or a Linux Container (LXC)."
+echo ""
+echo "💡 It asks a series of security-focused questions."
+echo "   You answer with:"
+echo "     y = Yes"
+echo "     n = No"
+echo "     u = Unsure (counts as partial risk)"
+echo ""
+echo "🎯 Goal: Reduce your attack surface by making isolation decisions"
+echo "   based on exposure, data sensitivity, and risk profile."
+echo "────────────────────────────────────────────────────────────"
+echo ""
+
+# Prompt for service name
+read -p "🛠️  What is the name of the service? " servicename
+logfile="logs/${servicename// /_}.log"
+mkdir -p logs
+
+echo "Choose mode:"
+echo "1. Simple (5 basic questions)"
+echo "2. Advanced (detailed risk assessment)"
+echo ""
+
+read -p "Enter choice [1/2]: " mode
+score=0
+answers=()
+questions=()
+
+log_entry() {
+    echo "$1" >> "$logfile"
+}
+
+ask() {
+    local question="$1"
+    local answer=""
+    while true; do
+        read -p "$question [y/n/u]: " answer
+        case $answer in
+            y|Y ) score=$((score + 1)); answers+=("Yes"); break;;
+            u|U ) score=$(echo "$score + 0.5" | bc); answers+=("Unsure"); break;;
+            n|N ) answers+=("No"); break;;
+            * ) echo "Please enter y (yes), n (no), or u (unsure).";;
+        esac
+    done
+    questions+=("$question")
+}
+
+timestamp=$(date "+%Y-%m-%d %H:%M:%S")
+log_entry "────────────────────────────────────────"
+log_entry "🛠️  Service: $servicename"
+log_entry "📅 Timestamp: $timestamp"
+
+if [[ "$mode" == "1" ]]; then
+    log_entry "📊 Mode: Simple"
+    echo ""
+    echo "👉 Simple Mode Selected"
+    echo ""
+    ask "1. Is the service exposed to the internet?"
+    ask "2. Does it handle sensitive user data?"
+    ask "3. Is it running third-party or untrusted code?"
+    ask "4. Does it require root access or host-level control?"
+    ask "5. Is performance more important than isolation?"
+
+elif [[ "$mode" == "2" ]]; then
+    log_entry "📊 Mode: Advanced"
+    echo ""
+    echo "👉 Advanced Mode Selected"
+    echo ""
+    ask "1. Is the service exposed to the public internet?"
+    ask "2. Does it store or process personal or sensitive information?"
+    ask "3. Will it interact with external APIs or plugins?"
+    ask "4. Does it require privileged access (e.g. mount disks, run as root)?"
+    ask "5. Will it run potentially unreviewed or unmaintained open source code?"
+    ask "6. Would a compromise lead to access to other containers or the host?"
+    ask "7. Does the service have a high CVE exposure history (e.g. WordPress)?"
+    ask "8. Is system performance critical (e.g. high IOPS or low latency)?"
+    ask "9. Will multiple users interact with the system simultaneously?"
+    ask "10. Is it something you plan to upgrade/test often with unknown configs?"
+
+else
+    echo " Invalid choice. Exiting."
+    exit 1
+fi
+
+echo ""
+echo "🧠 Total risk score: $score"
+echo ""
+log_entry "🧠 Risk score: $score"
+
+log_entry "📋 Questions and Answers:"
+for i in "${!questions[@]}"; do
+    log_entry "Q: ${questions[$i]}"
+    log_entry "A: ${answers[$i]}"
+done
+
+if (( $(echo "$score >= 3" | bc -l) )); then
+    result="🧱 Recommendation: Run this service in a -Virtual Machine (VM)- for strong isolation."
+elif (( $(echo "$score >= 2" | bc -l) )); then
+    result="⚖️  Recommendation: Consider using a VM if you want added protection."
+else
+    result="📦 Recommendation: Safe to run as -LXC container-, assuming best practices."
+fi
+
+echo "$result"
+log_entry "$result"
+log_entry ""
