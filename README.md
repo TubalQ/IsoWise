@@ -20,7 +20,9 @@
 
    
    git clone https://github.com/TubalQ/isowise.git
+
    cd isowise
+
    chmod +x isolation-helper.sh
    
 
